@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cell Annotation Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Cell Annotation Tool</h1>
+        
+        <div class="controls">
+            <input type="file" id="image-upload" accept="image/*">
+            
+            <div class="class-selector">
+                <button class="class-btn active" data-class="Cells">Cells (Green)</button>
+                <button class="class-btn" data-class="Dark_Spots">Dark Spots (Red)</button>
+                <button class="class-btn" data-class="Background">Background (Blue)</button>
+            </div>
+            
+            <div class="tools">
+                <button id="auto-detect">Auto Detect Cells</button>
+                <button id="export-btn">Export Annotations</button>
+                <button id="clear-btn">Clear All</button>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="annotation-canvas"></canvas>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

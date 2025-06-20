@@ -1,0 +1,168 @@
+class CellAnnotator {
+    constructor() {
+        this.canvas = document.getElementById('annotation-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.image = null;
+        this.annotations = [];
+        this.currentClass = 'Cells';
+        this.isDrawing = false;
+        this.currentPath = [];
+        
+        this.classColors = {
+            'Cells': '#00FF00',
+            'Dark_Spots': '#FF0000',
+            'Background': '#0000FF'
+        };
+        
+        this.init();
+    }
+    
+    init() {
+        // Event listeners
+        document.getElementById('image-upload').addEventListener('change', (e) => this.handleImageUpload(e));
+        
+        document.querySelectorAll('.class-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                this.currentClass = e.target.dataset.class;
+            });
+        });
+        
+        document.getElementById('auto-detect').addEventListener('click', () => this.autoDetectCells());
+        document.getElementById('export-btn').addEventListener('click', () => this.exportAnnotations());
+        document.getElementById('clear-btn').addEventListener('click', () => this.clearCanvas());
+        
+        // Canvas events
+        this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+        this.canvas.addEventListener('mousemove', (e) => this.draw(e));
+        this.canvas.addEventListener('mouseup', () => this.endDrawing());
+        this.canvas.addEventListener('mouseout', () => this.endDrawing());
+    }
+    
+    handleImageUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            this.image = new Image();
+            this.image.onload = () => {
+                this.canvas.width = this.image.width;
+                this.canvas.height = this.image.height;
+                this.redrawCanvas();
+            };
+            this.image.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    startDrawing(e) {
+        if (!this.image) return;
+        this.isDrawing = true;
+        this.currentPath = [this.getMousePos(e)];
+    }
+    
+    draw(e) {
+        if (!this.isDrawing || !this.image) return;
+        
+        const pos = this.getMousePos(e);
+        this.currentPath.push(pos);
+        
+        this.redrawCanvas();
+        
+        // Draw current path
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.currentPath[0].x, this.currentPath[0].y);
+        for (let i = 1; i < this.currentPath.length; i++) {
+            this.ctx.lineTo(this.currentPath[i].x, this.currentPath[i].y);
+        }
+        this.ctx.strokeStyle = this.classColors[this.currentClass];
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+    }
+    
+    endDrawing() {
+        if (!this.isDrawing || !this.image) return;
+        this.isDrawing = false;
+        
+        if (this.currentPath.length > 2) {
+            this.annotations.push({
+                class: this.currentClass,
+                contour: this.currentPath.map(p => [p.x, p.y])
+            });
+        }
+        
+        this.currentPath = [];
+    }
+    
+    redrawCanvas() {
+        if (!this.image) return;
+        
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.drawImage(this.image, 0, 0);
+        
+        // Draw all annotations
+        this.annotations.forEach(ann => {
+            this.ctx.beginPath();
+            this.ctx.moveTo(ann.contour[0][0], ann.contour[0][1]);
+            for (let i = 1; i < ann.contour.length; i++) {
+                this.ctx.lineTo(ann.contour[i][0], ann.contour[i][1]);
+            }
+            this.ctx.closePath();
+            this.ctx.strokeStyle = this.classColors[ann.class];
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+        });
+    }
+    
+    autoDetectCells() {
+        // Placeholder for auto-detection
+        alert("Auto-detection would be implemented here with TensorFlow.js");
+        // In a real implementation, you would use:
+        // 1. TensorFlow.js for ML-based detection
+        // 2. OpenCV.js for computer vision
+    }
+    
+    exportAnnotations() {
+        if (!this.image || this.annotations.length === 0) {
+            alert("No annotations to export!");
+            return;
+        }
+        
+        const data = {
+            image: {
+                width: this.canvas.width,
+                height: this.canvas.height
+            },
+            annotations: this.annotations
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cell_annotations.json';
+        a.click();
+    }
+    
+    clearCanvas() {
+        if (!this.image) return;
+        
+        if (confirm("Clear all annotations?")) {
+            this.annotations = [];
+            this.redrawCanvas();
+        }
+    }
+    
+    getMousePos(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+}
+
+// Initialize the annotator
+new CellAnnotator();
